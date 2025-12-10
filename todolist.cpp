@@ -148,6 +148,38 @@ void tampilkanSemuaTugas() {
              << daftarTugas[i].kategori << endl;
     }
 }
+void tampilkanSemuaTugas() {
+    if (jumlahTugas == 0) {
+        cout << "Belum ada tugas.\n";
+        return;
+    }
+     for (int i = 0; i < jumlahTugas; i++) {
+        cout << "\nTugas ke-" << i + 1 << ":\n";
+        tampilkantugas(&daftarTugas[i]);
+    }
+}
+void hapusTugas() {
+    if (jumlahTugas == 0) {
+        cout << "Belum ada tugas.\n";
+        return;
+    }
+    tampilkanSemuaTugas();
+
+    int nomor;
+    cout << endl << "Masukkan nomor tugas yang ingin dihapus: " << endl;
+    cin >> nomor;
+
+    if (nomor < 1 || nomor > jumlahTugas) {
+        cout << "Nomor tidak valid!" << endl;
+        return;
+    }
+
+    for (int i = nomor - 1; i < jumlahTugas - 1; i++) {
+        daftarTugas[i] = daftarTugas[i + 1];
+    }
+    jumlahTugas--;
+    cout << "Tugas nomor " << nomor << " berhasil dihapus!" << endl;
+}
 
 
 void hapusTugas() {

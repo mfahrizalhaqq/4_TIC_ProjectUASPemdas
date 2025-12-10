@@ -1,14 +1,9 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <vector>
 #include <ctime>
-#include <sstream>
-#include <iomanip>
-
 using namespace std;
 
-// Struktur untuk menyimpan data tugas
 struct Tugas {
     string nama;
     string keterangan;
@@ -16,14 +11,15 @@ struct Tugas {
     string kategori;
 };
 
-// Fungsi untuk validasi tanggal
+Tugas daftarTugas[1000];
+int jumlahTugas = 0;
+
 bool validasiTanggal(int hari, int bulan, int tahun) {
-    if (tahun < 2024) return false;
+    if (tahun < 2025) return false;
     if (bulan < 1 || bulan > 12) return false;
     
     int hari_dalam_bulan[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
     
-    // Cek tahun kabisat
     if ((tahun % 4 == 0 && tahun % 100 != 0) || (tahun % 400 == 0)) {
         hari_dalam_bulan[1] = 29;
     }
@@ -33,12 +29,11 @@ bool validasiTanggal(int hari, int bulan, int tahun) {
     return true;
 }
 
-// Fungsi untuk validasi waktu
 bool validasiWaktu(int jam, int menit) {
     return (jam >= 0 && jam <= 23 && menit >= 0 && menit <= 59);
 }
 
-// Fungsi untuk input deadline
+
 tm inputDeadline() {
     tm deadline = {};
     string input;
@@ -52,22 +47,36 @@ tm inputDeadline() {
         cout << "Masukkan Deadline Tugas: ";
         getline(cin, input);
         
-        // Parse string menggunakan stringstream
-        stringstream ss(input);
-        ss >> hari >> sep1 >> bulan >> sep2 >> tahun >> jam >> sep3 >> menit;
         
-        if (ss.fail() || sep1 != '-' || sep2 != '-' || sep3 != ':') {
-            cout << "Format salah! Gunakan format: DD-MM-YYYY HH:MM\n" << endl;
+        size_t pos1 = input.find('-');
+        size_t pos2 = input.find('-', pos1 + 1);
+        size_t pos3 = input.find(' ');
+        size_t pos4 = input.find(':');
+        
+        if (pos1 == string::npos || pos2 == string::npos || 
+            pos3 == string::npos || pos4 == string::npos) {
+            cout << "Format salah! Gunakan format: DD-MM-YYYY HH:MM" << endl;
+            continue;
+        }
+        
+        try {
+            hari = stoi(input.substr(0, pos1));
+            bulan = stoi(input.substr(pos1 + 1, pos2 - pos1 - 1));
+            tahun = stoi(input.substr(pos2 + 1, pos3 - pos2 - 1));
+            jam = stoi(input.substr(pos3 + 1, pos4 - pos3 - 1));
+            menit = stoi(input.substr(pos4 + 1));
+        } catch (...) {
+            cout << "Format salah! Gunakan format: DD-MM-YYYY HH:MM" << endl;
             continue;
         }
         
         if (!validasiTanggal(hari, bulan, tahun)) {
-            cout << "Tanggal tidak valid!\n" << endl;
+            cout << "Tanggal tidak valid!" << endl;
             continue;
         }
         
         if (!validasiWaktu(jam, menit)) {
-            cout << "Waktu tidak valid!\n" << endl;
+            cout << "Waktu tidak valid!" << endl;
             continue;
         }
         
@@ -84,159 +93,150 @@ tm inputDeadline() {
     return deadline;
 }
 
-// Fungsi untuk mengkonversi tm ke string
-string tmToString(const tm& waktu) {
-    char buffer[20];
-    strftime(buffer, sizeof(buffer), "%d-%m-%Y %H:%M", &waktu);
+
+string formatDeadline(const tm& deadline) {
+    char buffer[100];
+    sprintf(buffer, "%02d-%02d-%04d %02d:%02d", 
+            deadline.tm_mday, 
+            deadline.tm_mon + 1, 
+            deadline.tm_year + 1900,
+            deadline.tm_hour,
+            deadline.tm_min);
     return string(buffer);
 }
 
-// Fungsi untuk mengkonversi string ke tm
-tm stringToTm(const string& str) {
-    tm waktu = {};
-    int hari, bulan, tahun, jam, menit;
-    char sep1, sep2, sep3;
-    
-    stringstream ss(str);
-    ss >> hari >> sep1 >> bulan >> sep2 >> tahun >> jam >> sep3 >> menit;
-    
-    waktu.tm_mday = hari;
-    waktu.tm_mon = bulan - 1;
-    waktu.tm_year = tahun - 1900;
-    waktu.tm_hour = jam;
-    waktu.tm_min = menit;
-    waktu.tm_sec = 0;
-    
-    return waktu;
-}
 
-// Fungsi untuk menyimpan tugas ke file
-void simpanKeFile(const vector<Tugas>& daftarTugas) {
-    ofstream file("todolist.txt");
-    
-    if (!file.is_open()) {
-        cout << "Error: Tidak dapat membuka file untuk menyimpan!" << endl;
+void tambahTugas() {
+    if (jumlahTugas >= 100) {
+        cout << "Daftar tugas sudah penuh!" << endl;
         return;
     }
-    
-    for (const auto& tugas : daftarTugas) {
-        file << tugas.nama << "|"
-             << tugas.keterangan << "|"
-             << tmToString(tugas.deadline) << "|"
-             << tugas.kategori << endl;
-    }
-    
-    file.close();
-}
-
-// Fungsi untuk membaca tugas dari file
-vector<Tugas> bacaDariFile() {
-    vector<Tugas> daftarTugas;
-    ifstream file("todolist.txt");
-    
-    if (!file.is_open()) {
-        // File belum ada, return vector kosong
-        return daftarTugas;
-    }
-    
-    string baris;
-    while (getline(file, baris)) {
-        Tugas tugas;
-        stringstream ss(baris);
-        string deadlineStr;
-        
-        getline(ss, tugas.nama, '|');
-        getline(ss, tugas.keterangan, '|');
-        getline(ss, deadlineStr, '|');
-        getline(ss, tugas.kategori, '|');
-        
-        tugas.deadline = stringToTm(deadlineStr);
-        
-        daftarTugas.push_back(tugas);
-    }
-    
-    file.close();
-    return daftarTugas;
-}
-
-// Fungsi untuk menambah tugas
-void tambahTugas(vector<Tugas>& daftarTugas) {
-    Tugas tugas;
     
     cout << "\n====Masukkan Tugas Anda====" << endl;
     
+    cin.ignore();
     cout << "Masukkan Nama Tugas: ";
-    getline(cin, tugas.nama);
+    getline(cin, daftarTugas[jumlahTugas].nama);
     
     cout << "Masukkan Keterangan Tugas: ";
-    getline(cin, tugas.keterangan);
+    getline(cin, daftarTugas[jumlahTugas].keterangan);
     
-    tugas.deadline = inputDeadline();
+    daftarTugas[jumlahTugas].deadline = inputDeadline();
     
     cout << "Masukkan Kategori Tugas (contoh: Kuliah/Pekerjaan/Rumah/Dll): ";
-    getline(cin, tugas.kategori);
+    getline(cin, daftarTugas[jumlahTugas].kategori);
     
-    daftarTugas.push_back(tugas);
-    simpanKeFile(daftarTugas);
+    jumlahTugas++;
     
-    cout << "\n====Tugas Telah Ditambahkan====" << endl;
+    cout << "====Tugas Telah Ditambahkan====" << endl;
 }
 
-// Fungsi untuk menampilkan semua tugas
-void tampilkanSemuaTugas(const vector<Tugas>& daftarTugas) {
+
+void tampilkanSemuaTugas() {
     cout << "\nBerikut adalah daftar tugas anda:" << endl;
     
-    if (daftarTugas.empty()) {
-        cout << "Tidak ada tugas yang tersimpan." << endl;
+    if (jumlahTugas == 0) {
+        cout << "Belum ada tugas yang ditambahkan." << endl;
         return;
     }
     
-    for (size_t i = 0; i < daftarTugas.size(); i++) {
+    for (int i = 0; i < jumlahTugas; i++) {
         cout << (i + 1) << ". " 
              << daftarTugas[i].nama << " - "
              << daftarTugas[i].keterangan << " - "
-             << tmToString(daftarTugas[i].deadline) << " - "
+             << formatDeadline(daftarTugas[i].deadline) << " - "
              << daftarTugas[i].kategori << endl;
     }
 }
 
-// Fungsi untuk menampilkan daftar nama tugas
-void tampilkanDaftarNama(const vector<Tugas>& daftarTugas) {
-    for (size_t i = 0; i < daftarTugas.size(); i++) {
-        cout << (i + 1) << ". " << daftarTugas[i].nama << endl;
-    }
-}
 
-// Fungsi untuk menghapus tugas
-void hapusTugas(vector<Tugas>& daftarTugas) {
-    if (daftarTugas.empty()) {
-        cout << "\nTidak ada tugas yang dapat dihapus." << endl;
+void hapusTugas() {
+    if (jumlahTugas == 0) {
+        cout << "\nBelum ada tugas yang bisa dihapus." << endl;
         return;
     }
     
-    cout << "\nDaftar Tugas:" << endl;
-    tampilkanDaftarNama(daftarTugas);
+    tampilkanSemuaTugas();
     
-    int pilihan;
-    cout << "\nPilih nomor tugas yang ingin dihapus: ";
-    cin >> pilihan;
+    cout << "\nPilih Nama Tugas yang ingin dihapus: ";
     cin.ignore();
+    string namaTugas;
+    getline(cin, namaTugas);
     
-    if (pilihan < 1 || pilihan > (int)daftarTugas.size()) {
-        cout << "Nomor tugas tidak valid!" << endl;
+    bool ditemukan = false;
+    for (int i = 0; i < jumlahTugas; i++) {
+        if (daftarTugas[i].nama == namaTugas) {
+            
+            for (int j = i; j < jumlahTugas - 1; j++) {
+                daftarTugas[j] = daftarTugas[j + 1];
+            }
+            jumlahTugas--;
+            ditemukan = true;
+            cout << "\nTugas " << namaTugas << " telah dihapus" << endl;
+            break;
+        }
+    }
+    
+    if (!ditemukan) {
+        cout << "\nTugas dengan nama \"" << namaTugas << "\" tidak ditemukan." << endl;
+    }
+}
+
+
+void simpanKeFile() {
+    ofstream file("todolist.txt");
+    
+    if (!file.is_open()) {
         return;
     }
     
-    string namaTugas = daftarTugas[pilihan - 1].nama;
-    daftarTugas.erase(daftarTugas.begin() + (pilihan - 1));
-    simpanKeFile(daftarTugas);
+    file << jumlahTugas << endl;
     
-    cout << "\nTugas \"" << namaTugas << "\" telah dihapus" << endl;
+    for (int i = 0; i < jumlahTugas; i++) {
+        file << daftarTugas[i].nama << endl;
+        file << daftarTugas[i].keterangan << endl;
+        file << daftarTugas[i].deadline.tm_mday << " "
+             << daftarTugas[i].deadline.tm_mon << " "
+             << daftarTugas[i].deadline.tm_year << " "
+             << daftarTugas[i].deadline.tm_hour << " "
+             << daftarTugas[i].deadline.tm_min << endl;
+        file << daftarTugas[i].kategori << endl;
+    }
+    
+    file.close();
 }
 
-// Fungsi untuk menampilkan menu
+
+void bacaDariFile() {
+    ifstream file("todolist.txt");
+    
+    if (!file.is_open()) {
+        return;
+    }
+    
+    file >> jumlahTugas;
+    file.ignore();
+    
+    for (int i = 0; i < jumlahTugas; i++) {
+        getline(file, daftarTugas[i].nama);
+        getline(file, daftarTugas[i].keterangan);
+        
+        file >> daftarTugas[i].deadline.tm_mday
+             >> daftarTugas[i].deadline.tm_mon
+             >> daftarTugas[i].deadline.tm_year
+             >> daftarTugas[i].deadline.tm_hour
+             >> daftarTugas[i].deadline.tm_min;
+        file.ignore();
+        
+        getline(file, daftarTugas[i].kategori);
+    }
+    
+    file.close();
+}
+
+
 void tampilkanMenu() {
-    cout << "\n\nPROGRAM TO-DO-LIST - CATAT TUGASMU" << endl;
+    cout << "\nPROGRAM TO-DO-LIST - CATAT TUGASMU" << endl;
     cout << "===================================" << endl;
     cout << "1. Tambah Tugas" << endl;
     cout << "2. Tampilkan Semua Tugas" << endl;
@@ -246,31 +246,33 @@ void tampilkanMenu() {
 }
 
 int main() {
-    vector<Tugas> daftarTugas = bacaDariFile();
-    int pilihan;
     
-    while (true) {
+    bacaDariFile();
+    
+    int pilihan;
+    bool running = true;
+    
+    while (running) {
         tampilkanMenu();
         cin >> pilihan;
-        cin.ignore(); // Membersihkan newline dari buffer
         
         switch (pilihan) {
             case 1:
-                tambahTugas(daftarTugas);
+                tambahTugas();
+                simpanKeFile();
                 break;
-                
             case 2:
-                tampilkanSemuaTugas(daftarTugas);
+                tampilkanSemuaTugas();
                 break;
-                
             case 3:
-                hapusTugas(daftarTugas);
+                hapusTugas();
+                simpanKeFile();
                 break;
-                
             case 4:
                 cout << "\nTerima Kasih telah memakai program TO-DO-LIST" << endl;
-                return 0;
-                
+                simpanKeFile();
+                running = false;
+                break;
             default:
                 cout << "\nPilihan tidak valid! Silahkan ulang kembali" << endl;
         }

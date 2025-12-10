@@ -1,5 +1,6 @@
-1
-Tugas Akhir Progdas
-membuat sebuah program 
-10 11 125 23 59
-Kuliah
+1|||
+Tugas Akhir Progdas|||
+membuat sebuah program |||
+10 11 125 23 59|||
+Kuliah|||
+Progdas|Tugas akhir semester 1 |10-12-2025 23:59|Kuliah

@@ -1,7 +1,9 @@
 PROJEK AKHIR PEMROGRAMAN DASAR
 ====================================
-KELOMPOK | 4   KELAS | TIC 
+KELOMPOK | 4      KELAS | TIC 
+
 Nama project: TO-DO-LIST MAHASISWA
+
 ANGGOTA KELOMPOK:
 1. Mochammad Arva Josi Setiawan (145)
 2. M. Fahrizal Haqq (099)
